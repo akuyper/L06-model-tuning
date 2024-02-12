@@ -1,0 +1,403 @@
+---
+title: "L06 Model Tuning"
+subtitle: "Data Science 2 with R (STAT 301-2)"
+author: "YOUR NAME"
+date: today
+
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    embed-resources: true
+    code-fold: show
+    link-external-newwindow: true
+    
+execute:
+  warning: false
+  
+from: markdown+emoji  
+---
+
+::: {.callout-note collapse="true" icon="false"}
+## Successful science requires organization!
+
+As we increase the the number of models to train along with the number of times we will be training/fitting the models (resamples!), organization will be critical for carrying out the entire machine learning process.
+
+Thoughtful organization will help handle the increasing computational demands, streamline the analysis process, and aide in the communication of results.
+
+Thoughtful organization doesn't take one form, but we have provided a start.
+:::
+
+::: {.callout-important collapse="true"}
+## When completing your lab write-up
+
+Students must work in an R project connected to a GitHub repository for each lab. The repository should be well organized and it should have all relevant files. Within the project/repo there should be
+
+-   an appropriately named qmd file and
+-   the associated rendered html file (see canvas for naming convention);
+-   there should be multiple R scripts (appropriately named and ordered) completing the work in the labs;
+-   students should create/update README files in GitHub accordingly;
+
+Data processing and model fitting, especially model fitting, can take significant computational time. Re-running time consuming processes when rendering a document is extremely inefficient and must be avoided.
+
+This means students should practice writing these processes in scripts, saving results, and then loading them correctly when needed in their lab write-ups. It sometimes will be necessary to display code (show it, but don't run it) or even hide some code chunks when providing answers in the lab write-up.
+
+Remember to **make this document your own!** Meaning you should play with the layout and think about removing unnecessary sections or items (like this callout box block). Conversely you may end up adding sections or items. Make sure all of your solutions are clearly identified and communicated. 
+:::
+
+::: {.callout-important collapse="true"}
+## Load Package(s) & Setting a Seed
+
+Recall that it is best practice to load your packages towards the top of your document.
+
+Now that we are performing steps that involve randomness (for example data splitting and fitting random forest models) it is best practice to set a seed for the pseudo random algorithms.
+
+**Why?** Because it ensures our random steps are reproducible which has all kinds of practical benefits. Kind of mind blowing to replicate things that are supposed to be random!
+
+Students should set the seed directly before any random process and make a comment/note at the top of any R script that alerts potential users that a random process is being used.
+:::
+
+::: {.callout-tip icon="false"}
+## Github Repo Link
+
+To link to your github **repo**sitory, appropriately edit the example link below. Meaning replace `https://your-github-repo-url` with your github repo url. Suggest verifying the link works before submitting.
+
+[https://your-github-repo-url](https://your-github-repo-url)
+:::
+
+## Overview
+
+The goal for this lab is to start using resampling methods to both tune and compare models. Instead of comparing one candidate model from each model type we will now explore several candidate sub-models from each model type by tuning hyperparameters. The lab focuses on hyperparameter tuning, but this technique easily extends tuning to preprocessing techniques or tuning of structural parameters. Ultimately leading to the selection of a final/winning/best model.
+
+This lab represents the addition of the last major step using statistical/machine learning to build a predictive model. Meaning this is a lab that represents going through the entire process from start to finish.
+
+This lab covers material up to and including [13. Grid search (section 13.3)](https://www.tmwr.org/grid-search.html) from [Tidy Modeling with R](https://www.tmwr.org/).
+
+::: callout-important
+
+This lab can serve as an example of the overall statistical learning process --- much like what you will use for your final project. Your project should generally follow similar steps, although it will likely include much more data exploration, more feature engineering, and comparing more types of models.
+
+:::
+
+## Data
+
+For this lab, we will be working with a simulated dataset, designed to accompany the book [An Introduction to Statistical Learning with Applications in R](https://www.statlearning.com/). The data set consists of 400 observations concerning the sale of child car seats at different stores. A copy of the dataset can be found in the `data/` subdirectory along with a codebook.
+
+## Exercise
+
+::: {.callout-note icon="false"}
+## Prediction goal
+
+Our goal is to predict car seat sales as accurately as possible.
+:::
+
+### Task 1
+
+Load the data from `data/carseats.csv` into *R* and familiarize yourself with the variables it contains using the codebook (`data/carseats_codebook.txt`). When loading the data make sure to type variables as factors where appropriate --- in this case we will type all factor variables as nominal (ignore ordering). That is, don't type any as an ordered factor.
+
+1.  After reading in the dataset, explore/describe the distribution of the outcome variable `sales`. Are there any issues or concerns about the outcome variable?
+2.  We also should perform a quick quality check of the entire dataset. This is not a full EDA. Just checking that it is read in correctly, check dimensions, and for any major missingness issues. This can be done with a quick `skim` of the dataset or the use of other tools like the `naniar` package.
+
+There is no need to show code for this task.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+
+### Task 2
+
+Time to split the data. Use a proportion of 0.75 to split the data and use stratified sampling.
+
+After splitting the data, apply V-fold cross validation to the training dataset using 10 folds and 5 repeats --- use stratified sampling.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE: Display code for the splitting and folding of the data is required for the graders to verify this was done correctly. 
+
+:::
+
+How many times will you be fitting/training each model during the model competition/comparison stage?
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+On each fold, about how much data will be used for training the model and about how much will be used to produce an assessment estimate (fold RMSE)? Do you think this is reasonable? Explain.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+### Task 3
+
+Thinking ahead, we plan to fit 3 model types: k-nearest neighbors, random forest, and boosted tree. Knowing the models we plan to fit informs our preprocessing/recipes. In this case we can get away with using one recipe:
+
+::: {.callout-note collapse="true" icon="false"}
+## Recipe
+
+The steps described below are not necessarily in the correct order.
+
+-   Predict the target variable with all other variables
+-   One-hot encode all categorical predictors
+-   Filter out variables have have zero variance
+-   Center & scale all predictors
+:::
+
+Again, thinking ahead we will be tuning our tree-based models. One of those important hyperparameters we will be tuning is `mtry`, the number of randomly selected predictor variables that will be selected at each node to split on. This means we need to have a sense of how many predictor columns/variables will be available to use. How many predictor columns/variables are there in the dataset after we've processed it? We will use this number later to determine appropriate values of `mtry` to explore.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- display code is needed to verify recipe was defined correctly
+
+:::
+
+### Task 4
+
+Each model type should have its own script, begin by building the workflows for training and tuning the 3 models types.
+
+When building the workflows you will need the preprocessing and model specification. Since we are tuning hyperparameters for our model types we must identify the hyperparameters we wish to tune in the model specification.
+
+1.  A $k$-nearest neighbors model with the `kknn` engine (tune `neighbors`);
+2.  A random forest model with the `ranger` engine (tune `mtry` and `min_n`, set `trees = 1000`);
+3.  A boosted tree model with the `xgboost` engine (tune `mtry`, `min_n`, and `learn_rate`).
+
+*Hint:* Make sure engine packages are installed.
+
+Example for random forest model specification:
+
+```{r}
+#| label: rf-spec-example
+#| eval: false
+
+# model specification ----
+rf_model <- 
+  rand_forest(
+    mode = "regression",
+    trees = 1000, 
+    min_n = tune(),
+    mtry = tune()
+    ) |> 
+  set_engine("ranger")
+```
+
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- Provide display code for the boosted tree model specification (don't need the others). 
+
+:::
+
+
+### Task 5
+
+Before workflows can be trained, the hyperparameter values to use must be identified. Identifying which set of hyperparameter values to use, really means identifying which versions of the model types to train (sometimes referred to as sub-models).
+
+Typically we don't have a great idea what these values should be so we try out different values. One way to do this is with a regular grid.
+
+For each model type, setup and store a regular grid with 5 levels of possible values for each hyperparameter we identified for tuning.
+
+Example for random forest model:
+
+```{r}
+#| label: rf-tune-grid
+#| eval: false
+
+# hyperparameter tuning values ----
+
+# check ranges for hyperparameters
+hardhat::extract_parameter_set_dials(rf_model)
+
+# change hyperparameter ranges
+rf_params <- parameters(rf_model) %>% 
+  # N:= maximum number of random predictor columns we want to try 
+  # should be less than the number of available columns
+  update(mtry = mtry(c(1, N))) 
+
+# build tuning grid
+rf_grid <- grid_regular(rf_params, levels = 5)
+```
+
+-   The hyperparameters `min_n` and `neighbors` have default tuning ranges that should work reasonably well (at least we will live with them), so no need to update their defaults.
+
+-   For `mtry`, use `update()` (as shown above) to change the upper limit value to the number of predictor columns.
+
+-   For `learn_rate`, use `update()` to set `range = c(-5, -0.2)`.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- Provide display code for the boosted tree model's grid (don't need the others). 
+
+:::
+
+### Task 6
+
+We are about to complete the tuning and model comparison step --- pick the best model. It would be a good idea to know how many models are competing and how many trainings/fittings that will need to be done. Fill in the missing values in @tbl-mod-totals.
+
+| Model Type          | Number of models | Total number of trainings |
+|---------------------|-----------------:|--------------------------:|
+| K-nearest neighbors |                  |                           |
+| Random forest       |                  |                           |
+| Boosted tree        |                  |                           |
+| **Total**           |                  |                           |
+
+: Model Training Totals {#tbl-mod-totals .striped .hover}
+
+Suppose each model takes about 30 seconds to fit. How many minutes would it take to train all of these models, if fitting one after the other (meaning fit sequentially)? Describe how parallel processing could help to reduce the time needed to train all of these models.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+### Task 7
+
+We are now ready to tune and compare models. Knowing that we plan to compare models we need to decide on a performance metric before hand (best scientific practice). We will use RMSE which we know is calculated by default on the resamples/folds. 
+
+Use `tune_grid()` to complete the tuning process for each workflow. Supply your folded data and the appropriate grid of parameter values as arguments to `tune_grid()`. 
+
+::: callout-caution
+## WARNING: STORE THE RESULTS OF THIS CODE 
+
+You will **NOT** want to re-run this code each time you render this document. You **MUST** run model fitting in an R script and store the results as an rda file using `save()`. Suggest saving the workflow too. 
+
+You are expected to use parallel processing which will save a significant amount of time. **Report the number of cores/threads you will be using.**
+
+We also suggest using RStudio's background jobs functionality. If you run as background jobs you can report the run times, but it is not required.
+:::
+
+Example for random forest:
+
+```{r}
+#| label: rf-training
+#| eval: false
+
+# fit workflows/models ----
+# set seed
+set.seed(123567)
+rf_tuned <- 
+  rf_wflow |> 
+  tune_grid(
+    carseat_folds, 
+    grid = rf_grid, 
+    control = control_grid(save_workflow = TRUE)
+  )
+```
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- Provide display code for the boosted tree model and include the code necessary for this ro be run in parallel (don't need the others). Remember to report the number of cores/threads being used. 
+
+:::
+
+### Task 8
+
+Time to compare sub-models. Meaning time to explore the tuning process for the 3 model types.
+
+We will start with a visual inspection by using `autoplot()` on the tuning results from Task 7. Set the `metric` argument of `autoplot()` to `"rmse"` --- we previously selected that as our comparison metric. If you don't set this argument, then it will produce plots for $R^2$ as well --- doesn't hurt, but it gets crowded.
+
+Pick one of the three `autoplot()`s you've produced and describe it in your own words. What happens to the RMSE as the values of the tuning parameters change? 
+
+There is no need to show code for this task.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE
+
+:::
+
+### Task 9
+
+Might be able to use the graphs in Task 8 to determine the best set of hyperparameters for each model type, but it is easier to use `select_best()` on each of the objects containing the tuning information. For each model type, what would the best hyperparameters be (remember we are using RMSE for comparisons)?
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- There is no need to show code for this task
+
+:::
+
+Build a table that provides the mean RMSE, its standard error, and n (number of times RMSE we estimated) per model type. Which model type produced the best model? Explain how you made your choice. From the first part of the Task you should be able to identify this model's hyperparameter value(s). 
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- There is no need to show code for this task
+
+:::
+
+Example for random forest:
+
+```{r}
+#| label: best-hyperparams
+#| eval: false
+select_best(rf_tuned, metric = "rmse")
+```
+
+### Task 10
+
+We can now train the winning/best model identified in the last task on the entire training data set.
+
+Example, if the random forest performed best:
+
+```{r}
+#| label: train-best-model
+#| eval: false
+
+# finalize workflow ----
+final_wflow <- rf_tune |> 
+  extract_workflow(rf_tune) |>  
+  finalize_workflow(select_best(rf_tune, metric = "rmse"))
+
+# train final model ----
+# set seed
+set.seed(?????)
+final_fit <- fit(final_wflow, carseat_train)
+```
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- provide display code for fitting your final model
+
+:::
+
+
+### Task 11
+
+After fitting/training the best model in the last task, assess the model's performance on the test set using RMSE, MAE, and $R^2$. Provide an interpretation for each.
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- no need to show code. 
+
+:::
+
+### Task 12
+
+Visualize your results by plotting the predicted observations by the observed observations --- see Figure 9.2 in Tidy Modeling with R. 
+
+::: {.callout-tip icon="false"}
+## Solution
+
+YOUR SOLUTION HERE --- no need to show code. 
+
+:::
