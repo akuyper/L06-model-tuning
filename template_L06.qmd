@@ -2,30 +2,37 @@
 title: "L06 Model Tuning"
 subtitle: "Data Science 2 with R (STAT 301-2)"
 author: "YOUR NAME"
+pagetitle: "L06 YOUR NAME"
 date: today
 
 format:
   html:
+    theme: cosmo
     toc: true
     toc-depth: 4
+    toc-location: left
     embed-resources: true
-    code-fold: show
+    code-fold: false
     link-external-newwindow: true
-    
+
 execute:
   warning: false
-  
-from: markdown+emoji  
+
+from: markdown+emoji
+reference-location: margin
+citation-location: margin   
 ---
 
 ::: {.callout-note collapse="true" icon="false"}
+
 ## Successful science requires organization!
 
-As we increase the the number of models to train along with the number of times we will be training/fitting the models (resamples!), organization will be critical for carrying out the entire machine learning process.
+As we increase the the number of models to train along with the number of times we will be training/fitting the models (resamples!), organization will be critical for carrying out the entire machine learning process. 
 
 Thoughtful organization will help handle the increasing computational demands, streamline the analysis process, and aide in the communication of results.
 
-Thoughtful organization doesn't take one form, but we have provided a start.
+Thoughtful organization doesn't take one form, but we have implementing one from the very first lab and now it will start to pay off.
+
 :::
 
 ::: {.callout-important collapse="true"}
@@ -150,7 +157,7 @@ The steps described below are not necessarily in the correct order.
 
 -   Predict the target variable with all other variables
 -   One-hot encode all categorical predictors
--   Filter out variables have have zero variance
+-   Filter out variables that have zero variance
 -   Center & scale all predictors
 :::
 
@@ -171,7 +178,7 @@ When building the workflows you will need the preprocessing and model specificat
 
 1.  A $k$-nearest neighbors model with the `kknn` engine (tune `neighbors`);
 2.  A random forest model with the `ranger` engine (tune `mtry` and `min_n`, set `trees = 1000`);
-3.  A boosted tree model with the `xgboost` engine (tune `mtry`, `min_n`, and `learn_rate`).
+3.  A boosted tree model with the `xgboost` engine (tune `mtry`, `min_n`, `learn_rate`, set `trees` = 250).
 
 *Hint:* Make sure engine packages are installed.
 
@@ -182,14 +189,14 @@ Example for random forest model specification:
 #| eval: false
 
 # model specification ----
-rf_model <- 
+rf_spec <- 
   rand_forest(
-    mode = "regression",
     trees = 1000, 
     min_n = tune(),
     mtry = tune()
     ) |> 
-  set_engine("ranger")
+  set_engine("ranger") |> 
+  set_mode("regression")
 ```
 
 
@@ -218,10 +225,10 @@ Example for random forest model:
 # hyperparameter tuning values ----
 
 # check ranges for hyperparameters
-hardhat::extract_parameter_set_dials(rf_model)
+hardhat::extract_parameter_set_dials(rf_spec)
 
 # change hyperparameter ranges
-rf_params <- parameters(rf_model) %>% 
+rf_params <- hardhat::extract_parameter_set_dials(rf_spec) |> 
   # N:= maximum number of random predictor columns we want to try 
   # should be less than the number of available columns
   update(mtry = mtry(c(1, N))) 
@@ -247,16 +254,21 @@ YOUR SOLUTION HERE --- Provide display code for the boosted tree model's grid (d
 
 We are about to complete the tuning and model comparison step --- pick the best model. It would be a good idea to know how many models are competing and how many trainings/fittings that will need to be done. Fill in the missing values in @tbl-mod-totals.
 
-| Model Type          | Number of models | Total number of trainings |
-|---------------------|-----------------:|--------------------------:|
-| K-nearest neighbors |                  |                           |
-| Random forest       |                  |                           |
-| Boosted tree        |                  |                           |
-| **Total**           |                  |                           |
+| Model Type           | Number of models | Total number of trainings^[Number of times a training process must be completed] |
+|:---------------------|-----------------:|--------------------------:|
+| K-nearest neighbors  |                  |                           |
+| Random forest        |                  |                           |
+| Boosted tree         |                  |                           |
+| **Total**            |                  |                           |
 
 : Model Training Totals {#tbl-mod-totals .striped .hover}
 
-Suppose each model takes about 30 seconds to fit. How many minutes would it take to train all of these models, if fitting one after the other (meaning fit sequentially)? Describe how parallel processing could help to reduce the time needed to train all of these models.
+Suppose each model takes about 30 seconds to fit. How many minutes^[Report in additional unit(s) of time, if it would be more useful/impactful.] would it take to train all of these models, if fitting one after the other (meaning fit sequentially)? Describe how parallel processing could help to reduce the time needed to train all of these models.
+
+:::{.callout-note}
+The time it takes to fit each model is hypothetical and does not reflect how long it will take to complete this process.
+:::
+
 
 ::: {.callout-tip icon="false"}
 ## Solution
