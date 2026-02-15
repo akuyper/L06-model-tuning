@@ -53,15 +53,13 @@ Remember to **make this document your own!** Meaning you should play with the la
 :::
 
 ::: {.callout-important collapse="true"}
-## Load Package(s) & Setting a Seed
+## Load Package(s) & Needed Objects
 
 Recall that it is best practice to load your packages towards the top of your document.
 
-Now that we are performing steps that involve randomness (for example data splitting and fitting random forest models) it is best practice to set a seed for the pseudo random algorithms.
+Students should set the seed directly before any random process (for example data splitting and fitting random forest models) and make a comment/note at the top of any R script that alerts potential users that a random process is being used.
 
-**Why?** Because it ensures our random steps are reproducible which has all kinds of practical benefits. Kind of mind blowing to replicate things that are supposed to be random!
-
-Students should set the seed directly before any random process and make a comment/note at the top of any R script that alerts potential users that a random process is being used.
+All necessary objects (split data, tuned/fit objects, etc.) should be loaded into the qmd at the top of the document, meaning no random process should be happening directly within this document.
 :::
 
 ::: {.callout-tip icon="false"}
