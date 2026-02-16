@@ -174,9 +174,9 @@ Each model type should have its own script, begin by building the workflows for 
 
 When building the workflows you will need the preprocessing and model specification. Since we are tuning hyperparameters for our model types we must identify the hyperparameters we wish to tune in the model specification.
 
-1.  A $k$-nearest neighbors model with the `kknn` engine (tune `neighbors`);
-2.  A random forest model with the `ranger` engine (tune `mtry` and `min_n`, set `trees = 1000`);
-3.  A boosted tree model with the `xgboost` engine (tune `mtry`, `min_n`, `learn_rate`, set `trees` = 250).
+1.  An elastic net model with the `glm` engine (tune `penalty` and `mixture`);
+2.  A $k$-nearest neighbors model with the `kknn` engine (tune `neighbors`);
+3.  A boosted tree model with the `xgboost` engine (tune `mtry`, `min_n`, `learn_rate`, and `trees`).
 
 *Hint:* Make sure engine packages are installed.
 
@@ -212,7 +212,9 @@ Before workflows can be trained, the hyperparameter values to use must be identi
 
 Typically we don't have a great idea what these values should be so we try out different values. One way to do this is with a regular grid.
 
-For each model type, setup and store a regular grid with 5 levels of possible values for each hyperparameter we identified for tuning.
+For elastic net and knn, setup and store a regular grid with 5 levels of possible values for each hyperparameter we identified for tuning.
+
+For boosted tree, use a grid with 5 levels for `mtry`, `min_n`, and `learn_rate` and 3 levels for `trees`.
 
 Example for random forest model:
 
@@ -229,7 +231,10 @@ hardhat::extract_parameter_set_dials(rf_spec)
 rf_params <- hardhat::extract_parameter_set_dials(rf_spec) |> 
   # N:= maximum number of random predictor columns we want to try 
   # should be less than the number of available columns
-  update(mtry = mtry(c(1, N))) 
+  update(
+    mtry = mtry(c(1, N)),
+    min_n = min_n()
+  ) 
 
 # build tuning grid
 rf_grid <- grid_regular(rf_params, levels = 5)
@@ -237,9 +242,15 @@ rf_grid <- grid_regular(rf_params, levels = 5)
 
 -   The hyperparameters `min_n` and `neighbors` have default tuning ranges that should work reasonably well (at least we will live with them), so no need to update their defaults.
 
--   For `mtry`, use `update()` (as shown above) to change the upper limit value to the number of predictor columns.
+-   For `penalty`, use `update()` to set `range = c(-5, -0.2)`.
+
+-   For `mixture`, use `update()` to set `range = c(0, 1)`.
+
+-   For `mtry`, use `update()` (as shown above) to set the upper limit to an appropriate value.
 
 -   For `learn_rate`, use `update()` to set `range = c(-5, -0.2)`.
+
+-   For `trees`, use `update()` to set `range = c(500, 1500)`.
 
 ::: {.callout-tip icon="false"}
 ## Solution
@@ -254,8 +265,8 @@ We are about to complete the tuning and model comparison step --- pick the best 
 
 | Model Type           | Number of models | Total number of trainings^[Number of times a training process must be completed] |
 |:---------------------|-----------------:|--------------------------:|
+| Elastic net          |                  |                           |
 | K-nearest neighbors  |                  |                           |
-| Random forest        |                  |                           |
 | Boosted tree         |                  |                           |
 | **Total**            |                  |                           |
 
@@ -344,7 +355,7 @@ YOUR SOLUTION HERE --- There is no need to show code for this task
 
 :::
 
-Build a table that provides the mean RMSE, its standard error, and n (number of times RMSE we estimated) per model type. Which model type produced the best model? Explain how you made your choice. From the first part of the Task you should be able to identify this model's hyperparameter value(s). 
+Build a table that provides the mean RMSE, its standard error, and n (number of times RMSE we estimated) for the best model per model type. Which model type produced the best model? Explain how you made your choice. From the first part of the Task you should be able to identify this model's hyperparameter value(s). 
 
 ::: {.callout-tip icon="false"}
 ## Solution

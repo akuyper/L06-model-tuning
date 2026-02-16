@@ -3210,7 +3210,7 @@ Prediction goal
 </section>
 <section id="task-3" class="level3">
 <h3 class="anchored" data-anchor-id="task-3">Task 3</h3>
-<p>Thinking ahead, we plan to fit 3 model types: k-nearest neighbors, random forest, and boosted tree. Knowing the models we plan to fit informs our preprocessing/recipes. In this case we can get away with using one recipe:</p>
+<p>Thinking ahead, we plan to fit 3 model types: elastic net, k-nearest neighbors, and boosted tree. Knowing the models we plan to fit informs our preprocessing/recipes. In this case we can get away with using one recipe:</p>
 <div class="callout callout-style-default callout-note no-icon callout-titled">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -3240,12 +3240,12 @@ Recipe
 <p>Each model type should have its own script, begin by building the workflows for training and tuning the 3 models types.</p>
 <p>When building the workflows you will need the preprocessing and model specification. Since we are tuning hyperparameters for our model types we must identify the hyperparameters we wish to tune in the model specification.</p>
 <ol type="1">
+<li>An elastic net model with the <code>glm</code> engine (tune <code>penalty</code> and <code>mixture</code>);</li>
 <li>A <span class="math inline">\(k\)</span>-nearest neighbors model with the <code>kknn</code> engine (tune <code>neighbors</code>);</li>
-<li>A random forest model with the <code>ranger</code> engine (tune <code>mtry</code> and <code>min_n</code>, set <code>trees = 1000</code>);</li>
-<li>A boosted tree model with the <code>xgboost</code> engine (tune <code>mtry</code>, <code>min_n</code>, <code>learn_rate</code>, set <code>trees</code> = 250).</li>
+<li>A boosted tree model with the <code>xgboost</code> engine (tune <code>mtry</code>, <code>min_n</code>, <code>learn_rate</code>, and <code>trees</code>).</li>
 </ol>
 <p><em>Hint:</em> Make sure engine packages are installed.</p>
-<p>Example for random forest model specification:</p>
+<p>Example for a random forest model specification:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># model specification ----</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>rf_spec <span class="ot">&lt;-</span> </span>
@@ -3262,7 +3262,8 @@ Recipe
 <h3 class="anchored" data-anchor-id="task-5">Task 5</h3>
 <p>Before workflows can be trained, the hyperparameter values to use must be identified. Identifying which set of hyperparameter values to use, really means identifying which versions of the model types to train (sometimes referred to as sub-models).</p>
 <p>Typically we don’t have a great idea what these values should be so we try out different values. One way to do this is with a regular grid.</p>
-<p>For each model type, setup and store a regular grid with 5 levels of possible values for each hyperparameter we identified for tuning.</p>
+<p>For elastic net and knn, setup and store a regular grid with 5 levels of possible values for each hyperparameter we identified for tuning.</p>
+<p>For boosted tree, use a grid with 5 levels for <code>mtry</code>, <code>min_n</code>, and <code>learn_rate</code> and 3 levels for <code>trees</code>.</p>
 <p>Example for random forest model:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># hyperparameter tuning values ----</span></span>
@@ -3284,8 +3285,11 @@ Recipe
 </div>
 <ul>
 <li><p>The hyperparameters <code>min_n</code> and <code>neighbors</code> have default tuning ranges that should work reasonably well (at least we will live with them), so no need to update their defaults.</p></li>
+<li><p>For <code>penalty</code>, use <code>update()</code> to set <code>range = c(-5, -0.2)</code>.</p></li>
+<li><p>For <code>mixture</code>, use <code>update()</code> to set <code>range = c(0, 1)</code>.</p></li>
 <li><p>For <code>mtry</code>, use <code>update()</code> (as shown above) to set the upper limit to an appropriate value.</p></li>
 <li><p>For <code>learn_rate</code>, use <code>update()</code> to set <code>range = c(-5, -0.2)</code>.</p></li>
+<li><p>For <code>trees</code>, use <code>update()</code> to set <code>range = c(500, 1500)</code>.</p></li>
 </ul>
 </section>
 <section id="task-6" class="level3 page-columns page-full">
@@ -3308,12 +3312,12 @@ Recipe
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">K-nearest neighbors</td>
+<td style="text-align: left;">Elastic net</td>
 <td style="text-align: right;"></td>
 <td style="text-align: right;"></td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">K-nearest neighbors</td>
 <td style="text-align: right;"></td>
 <td style="text-align: right;"></td>
 </tr>
